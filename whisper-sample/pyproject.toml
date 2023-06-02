@@ -19,5 +19,5 @@ managed = true
 allow-direct-references = true
 
 [tool.rye.scripts]
-transcribe = "whisper --language Japanese --model large input.mp3"
+transcribe = "whisper --language Japanese --model large"
 main = "python src/main.py"
