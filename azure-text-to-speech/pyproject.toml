@@ -17,3 +17,7 @@ build-backend = "hatchling.build"
 managed = true
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.rye.scripts]
+main = "python src/main.py"
+speak = "python src/speak.py"
