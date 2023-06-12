@@ -44,3 +44,31 @@ def reply(msg):
     output = output.replace("<NL>", "\n")
     print("システム(ppo): " + output + "\n")
     return output
+
+
+# mainとして実行された場合は、ユーザーからの入力を受け付ける
+if __name__ == "__main__":
+    import readline
+    import time
+
+    questions = [
+        "こんにちは",
+        "日本の首相は？",
+        "日本の首都は？",
+        "アメリカの首都は？",
+        "アメリカの大統領は？",
+        "日本に大統領はいますか？",
+    ]
+    while True:
+        # 実行時間を計測する
+        start = time.time()
+        print("=========================================")
+        if len(questions) > 0:
+            q = questions.pop(0)
+            print(f"ユーザー: {q}\n")
+            reply(q)
+        else:
+            msg = input("ユーザー: ")
+            reply(msg)
+
+        print(f"実行時間: {time.time() - start:.2f}秒")

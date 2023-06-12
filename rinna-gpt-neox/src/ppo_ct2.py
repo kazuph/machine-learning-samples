@@ -10,7 +10,8 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-generator = ctranslate2.Generator("rinna_gpt_neox_ppo_ct2", device=device)
+# generator = ctranslate2.Generator("rinna_gpt_neox_ppo_ct2_ft16", device=device)
+generator = ctranslate2.Generator("rinna_gpt_neox_ppo_ct2_int8", device=device)
 tokenizer = transformers.AutoTokenizer.from_pretrained(ppo, use_fast=False)
 
 
@@ -29,24 +30,49 @@ def prompt(msg):
 # 返信を作成する
 def reply(msg):
     p = prompt(msg)
-    tokens = tokenizer.convert_ids_to_tokens(tokenizer.encode(p))
+    tokens = tokenizer.convert_ids_to_tokens(
+        tokenizer.encode(
+            p,
+            add_special_tokens=False,
+        )
+    )
 
     results = generator.generate_batch(
         [tokens],
         max_length=256,
-        sampling_topk=20,
-        sampling_temperature=0.9,
+        sampling_topk=10,
+        sampling_temperature=0.7,
+        include_prompt_in_result=False,
     )
 
-    # resultsの中身を確認する
-    print(results)
-
     text = tokenizer.decode(results[0].sequences_ids[0])
-
-    # textは
-    # ユーザー: こんにちわ<NL>システム: </s>『東京ディズニーシー』は...
-    # と出るが、欲しいのはシステム: 〜 </s>の部分なので、
-    # </s>以前を取得する
-    # text = text.split("</s>")[0]
     print("システム(ppo-ct2): " + text + "\n")
     return text
+
+
+# mainとして実行された場合は、ユーザーからの入力を受け付ける
+if __name__ == "__main__":
+    import readline
+    import time
+
+    questions = [
+        "こんにちは",
+        "日本の首相は？",
+        "日本の首都は？",
+        "アメリカの首都は？",
+        "アメリカの大統領は？",
+        "日本に大統領はいますか？",
+    ]
+    while True:
+        # 実行時間を計測する
+        start = time.time()
+        print("=========================================")
+        if len(questions) > 0:
+            q = questions.pop(0)
+            print(f"ユーザー: {q}\n")
+            reply(q)
+        else:
+            msg = input("ユーザー: ")
+            reply(msg)
+
+        print(f"実行時間: {time.time() - start:.2f}秒")

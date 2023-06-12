@@ -3,7 +3,8 @@ import readline
 # ユーザーからppoが良いかsfv_v2が良いかを選択してもらう
 model = None
 while True:
-    msg = input("ppo or ppo_ct2 or sft_v2: ")
+    # msg = input("ppo or ppo_ct2 or sft_v2: ")
+    msg = "ppo_ct2"
     if msg == "ppo":
         model = msg
         import ppo
