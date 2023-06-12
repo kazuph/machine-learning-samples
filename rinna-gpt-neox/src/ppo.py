@@ -57,18 +57,19 @@ if __name__ == "__main__":
         "日本の首都は？",
         "アメリカの首都は？",
         "アメリカの大統領は？",
-        "日本に大統領はいますか？",
     ]
     while True:
-        # 実行時間を計測する
-        start = time.time()
         print("=========================================")
         if len(questions) > 0:
             q = questions.pop(0)
             print(f"ユーザー: {q}\n")
-            reply(q)
+
+            start = time.time()
+            output = reply(q)
+            # 質問、回答、実行時間をcsvで保存する
+            with open("ppo.csv", "a") as f:
+                f.write(f"{q},{time.time() - start:.2f}\n")
+            print(f"実行時間: {time.time() - start:.2f}秒")
         else:
             msg = input("ユーザー: ")
             reply(msg)
-
-        print(f"実行時間: {time.time() - start:.2f}秒")
