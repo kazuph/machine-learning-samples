@@ -9,12 +9,16 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-generator = ctranslate2.Generator("falcon-7b-instruct_ct2", device=device)
-tokenizer = transformers.AutoTokenizer.from_pretrained("tiiuae/falcon-7b-instruct")
+generator = ctranslate2.Generator("gpt_neox_chat_base_ct2", device=device)
+tokenizer = transformers.AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
 
 
 def reply(msg):
     msg = m2m.ja2en(msg)
+    # 先頭に<human>:を追加
+    msg = "<human>:" + msg
+    # 末尾に<bot>:を追加
+    msg = msg + "\n<bot>:"
     tokens = tokenizer.convert_ids_to_tokens(
         tokenizer.encode(
             msg,
@@ -26,8 +30,11 @@ def reply(msg):
     )
 
     text = tokenizer.decode(results[0].sequences_ids[0])
-    text = m2m.en2ja(text)
-    print("システム(falcon-7b-with-m2m): " + text + "\n")
+    # <bot>:〜<human>:までを抽出
+    text = text.split("<human>:")[0]
+    # print(text)
+    # text = m2m.en2ja(text)
+    print("<human>(gpt-neox-20B-with-m2m): " + text)
     return text
 
 
@@ -46,13 +53,13 @@ if __name__ == "__main__":
         print("=========================================")
         if len(questions) > 0:
             q = questions.pop(0)
-            print(f"ユーザー: {q}\n")
+            print(f"<human>: {q}\n")
 
             start = time.time()
             output = reply(q)
             print(f"実行時間: {time.time() - start:.2f}秒")
         else:
-            msg = input("ユーザー: ")
+            msg = input("<human>: ")
             start = time.time()
             reply(msg)
             print(f"実行時間: {time.time() - start:.2f}秒")

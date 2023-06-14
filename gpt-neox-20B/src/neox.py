@@ -1,7 +1,6 @@
 import ctranslate2
 import transformers
 import torch
-import m2m
 
 # cudaが使える場合はcudaを使う
 if torch.cuda.is_available():
@@ -9,12 +8,11 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-generator = ctranslate2.Generator("falcon-7b-instruct_ct2", device=device)
-tokenizer = transformers.AutoTokenizer.from_pretrained("tiiuae/falcon-7b-instruct")
+generator = ctranslate2.Generator("gpt_neox_chat_base_ct2", device=device)
+tokenizer = transformers.AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
 
 
 def reply(msg):
-    msg = m2m.ja2en(msg)
     tokens = tokenizer.convert_ids_to_tokens(
         tokenizer.encode(
             msg,
@@ -26,8 +24,7 @@ def reply(msg):
     )
 
     text = tokenizer.decode(results[0].sequences_ids[0])
-    text = m2m.en2ja(text)
-    print("システム(falcon-7b-with-m2m): " + text + "\n")
+    print("システム(gpt-neox-20B): " + text + "\n")
     return text
 
 
@@ -36,11 +33,11 @@ if __name__ == "__main__":
     import time
 
     questions = [
-        # "こんにちは",
-        # "日本の首相は？",
-        # "日本の首都は？",
-        # "アメリカの首都は？",
-        # "アメリカの大統領は？",
+        "こんにちは",
+        "日本の首相は？",
+        "日本の首都は？",
+        "アメリカの首都は？",
+        "アメリカの大統領は？",
     ]
     while True:
         print("=========================================")
@@ -53,6 +50,4 @@ if __name__ == "__main__":
             print(f"実行時間: {time.time() - start:.2f}秒")
         else:
             msg = input("ユーザー: ")
-            start = time.time()
             reply(msg)
-            print(f"実行時間: {time.time() - start:.2f}秒")

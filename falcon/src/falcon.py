@@ -47,9 +47,6 @@ if __name__ == "__main__":
 
             start = time.time()
             output = reply(q)
-            # 質問、回答、実行時間をcsvで保存する
-            with open("falcon_ct2.csv", "a") as f:
-                f.write(f"{q},{time.time() - start:.2f}\n")
             print(f"実行時間: {time.time() - start:.2f}秒")
         else:
             msg = input("ユーザー: ")
