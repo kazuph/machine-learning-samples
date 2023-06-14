@@ -1,2 +1,7 @@
 *.mp3
 *.wav
+/__pycache__
+/.venv
+*.csv
+*_ct2/
+*.pyc
