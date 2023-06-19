@@ -1,0 +1,37 @@
+[project]
+name = "ore-tweets-lora"
+version = "0.1.0"
+description = "Add a short description here"
+authors = [
+    { name = "Kazuhiro Homma", email = "kazu.homma@gmail.com" }
+]
+dependencies = [
+    "peft @ git+https://github.com/huggingface/peft.git",
+    "transformers~=4.30.2",
+    "datasets~=2.13.0",
+    "accelerate~=0.20.3",
+    "sentencepiece~=0.1.99",
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "scipy~=1.10.1",
+    "bitsandbytes~=0.39.0",
+]
+readme = "README.md"
+requires-python = ">= 3.8"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.rye.sources]
+name = "pytorch"
+url = "https://download.pytorch.org/whl"
+type = "find-links"
+
