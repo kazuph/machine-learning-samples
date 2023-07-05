@@ -1,0 +1,51 @@
+version: '3.9'
+services:
+  app:
+    tty: true
+    build:
+      context: .
+      dockerfile: "Dockerfile"
+    ports:
+      - "7878:7860"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - HUGGINGFACE_AUTH_TOKEN=${HUGGINGFACE_AUTH_TOKEN}
+    volumes:
+      - .:/app
+      - python-packages:/root/.local/share
+      - cache:/root/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+              - driver: nvidia
+                device_ids: ['0']
+                capabilities: [compute, utility]
+  # notebook:
+  #     context: .
+  #     dockerfile: "Dockerfile"
+  #   restart: always
+  #   entrypoint: >
+  #     jupyter-lab
+  #       --allow-root
+  #       --ip=0.0.0.0
+  #       --port=8888
+  #       --no-browser
+  #       --NotebookApp.token=''
+  #       --notebook-dir=/workspace
+  #   ports:
+  #     - 8888:8888
+  #   volumes:
+  #     - ./py3/root_jupyter:/root/.jupyter
+  #     - ./workspace:/workspace
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #             - driver: nvidia
+  #               device_ids: ['0']
+  #               capabilities: [compute, utility]
+
+volumes:
+  python-packages:
+  cache:
