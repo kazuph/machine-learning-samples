@@ -13,6 +13,7 @@ import gradio as gr
 import pandas as pd
 import time
 import os
+import base64
 import subprocess
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
@@ -291,6 +292,10 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
                         f"✘ start={segment_chunk.start:.1f}s end={segment_chunk.end:.1f}s speaker={speaker}")
                 chunk["text"] = text
                 chunk["speaker"] = speaker
+
+                # tmp.wavをbase64に変換して保存
+                chunk["audio"] = "data:audio/wav;base64," + base64.b64encode(
+                    open("tmp.wav", "rb").read()).decode("utf-8")
                 segments.append(chunk)
                 print(
                     f"start={turn.start:.1f}s end={turn.end:.1f}s speaker_{speaker}, text={chunk['text']}")
@@ -369,17 +374,28 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
         }
         text = ''
         for (i, segment) in enumerate(segments):
-            if i == 0 or segments[i - 1]["speaker"] != segment["speaker"]:
-                objects['Start'].append(str(convert_time(segment["start"])))
-                objects['Speaker'].append(segment["speaker"])
-                if i != 0:
-                    objects['End'].append(
-                        str(convert_time(segments[i - 1]["end"])))
-                    objects['Text'].append(text)
-                    text = ''
-            text += segment["text"] + ' '
-        objects['End'].append(str(convert_time(segments[i - 1]["end"])))
-        objects['Text'].append(text)
+            objects['Start'].append(str(convert_time(segment["start"])))
+            objects['End'].append(str(convert_time(segment["end"])))
+            objects['Speaker'].append(segment["speaker"])
+            objects['Text'].append(segment["text"])
+            objects['Audio'].append(
+                f"<audio controls src='{segment['audio']}' ></audio>")
+
+            # if i == 0 or segments[i - 1]["speaker"] != segment["speaker"]:
+            #     objects['Start'].append(str(convert_time(segment["start"])))
+            #     objects['Speaker'].append(segment["speaker"])
+            #     # audioタグを追加
+            #     objects['Audio'].append(
+            #         f"<audio controls src='{segment['audio']}' ></audio>")
+            #     if i != 0:
+            #         objects['End'].append(
+            #             str(convert_time(segments[i - 1]["end"])))
+            #         objects['Text'].append(text)
+            #         text = ''
+            # text += segment["text"] + ' '
+
+        # objects['End'].append(str(convert_time(segments[i - 1]["end"])))
+        # objects['Text'].append(text)
 
         time_end = time.time()
         time_diff = time_end - time_start
@@ -388,14 +404,16 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
         gpu_utilization = gpu_utilization[0] if len(gpu_utilization) > 0 else 0
         gpu_memory = gpu_memory[0] if len(gpu_memory) > 0 else 0
         system_info = f"""
-        *Memory: {memory.total / (1024 * 1024 * 1024):.2f}GB, used: {memory.percent}%, available: {memory.available / (1024 * 1024 * 1024):.2f}GB.* 
+        *Memory: {memory.total / (1024 * 1024 * 1024):.2f}GB, used: {memory.percent}%, available: {memory.available / (1024 * 1024 * 1024):.2f}GB.*
         *Processing time: {time_diff:.5} seconds.*
         *GPU Utilization: {gpu_utilization}%, GPU Memory: {gpu_memory}MiB.*
         """
         save_path = "output/transcript_result.csv"
         df_results = pd.DataFrame(objects)
+        df_results_html = df_results.to_html(escape=False, render_links=False,
+                                             index=False, header=False)
         df_results.to_csv(save_path)
-        return df_results, system_info, save_path
+        return df_results_html, system_info, save_path
 
     except Exception as e:
         raise RuntimeError("Error Running inference with local model", e)
@@ -422,6 +440,7 @@ system_info = gr.Markdown(
 download_transcript = gr.File(label="Download transcript")
 transcription_df = gr.DataFrame(value=df_init, label="Transcription dataframe", row_count=(
     0, "dynamic"), max_rows=10, wrap=True, overflow_row_behaviour='paginate')
+transcription_html = gr.HTML(label="Transcription html", html_content="")
 title = "Whisper speaker diarization"
 demo = gr.Blocks(title=title)
 demo.encrypt = False
@@ -481,7 +500,8 @@ with demo:
                 transcribe_btn.click(speech_to_text,
                                      [audio_in, video_in, selected_source_lang,
                                          selected_whisper_model, number_speakers, number_cut_time, is_pyannote],
-                                     [transcription_df, system_info,
+                                     # [transcription_df, system_info,
+                                     [transcription_html, system_info,
                                          download_transcript]
                                      )
 
@@ -494,6 +514,7 @@ with demo:
             with gr.Column():
                 download_transcript.render()
                 transcription_df.render()
+                transcription_html.render()
                 system_info.render()
                 gr.Markdown('''<center><img src='https://visitor-badge.glitch.me/badge?page_id=WhisperDiarizationSpeakers' alt='visitor badge'><a href="https://opensource.org/licenses/Apache-2.0"><img src='https://img.shields.io/badge/License-Apache_2.0-blue.svg' alt='License: Apache 2.0'></center>''')
 
