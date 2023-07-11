@@ -3,6 +3,7 @@ RUN apt update && apt install -y python3 python3-pip build-essential libssl-dev 
 RUN apt install -y cmake
 RUN apt install -y git
 RUN apt install -y ffmpeg
+RUN apt install -y nvidia-cuda-toolkit
 
 WORKDIR /app
 
@@ -10,6 +11,7 @@ RUN pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/c
 RUN pip3 uninstall -y cmake
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
+
 
 # RUN pip3 install --no-cache-dir \
 #   black \

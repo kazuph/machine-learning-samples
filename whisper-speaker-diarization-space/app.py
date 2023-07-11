@@ -14,7 +14,9 @@ import pandas as pd
 import time
 import os
 import base64
+import random
 import subprocess
+import shutil
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import silhouette_score
@@ -24,10 +26,6 @@ import torch
 import pyannote.audio
 
 from pyannote.audio import Pipeline
-AUTH_TOKEN = os.environ.get("HUGGINGFACE_AUTH_TOKEN", None)
-diarization_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@2.1",
-                                                use_auth_token=AUTH_TOKEN)
-diarization_pipeline.to(torch.device('cuda'))
 
 whisper_models = ["tiny", "base", "small", "medium", "large-v1", "large-v2"]
 source_languages = {
@@ -220,6 +218,12 @@ def get_youtube(video_url):
 
 
 def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisper_model, num_speakers, num_cut_time, is_pyannote):
+
+    if is_pyannote:
+        AUTH_TOKEN = os.environ.get("HUGGINGFACE_AUTH_TOKEN", None)
+        diarization_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@2.1",
+                                                        use_auth_token=AUTH_TOKEN)
+        diarization_pipeline.to(torch.device('cuda'))
     """
     # Transcribe youtube link using OpenAI Whisper
     1. Using Open AI's Whisper model to seperate audio into segments and generate transcripts.
@@ -270,6 +274,10 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
         transcribe_options = dict(task="transcribe", **options)
 
         segments = []
+
+        # output/以下は一度空にする
+        shutil.rmtree("output")
+
         if is_pyannote:
             diarization = diarization_pipeline(audio_file_path)
             for turn, _, speaker in diarization.itertracks(yield_label=True):
@@ -279,11 +287,15 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
 
                 # startからendまでの音声を切り出す
                 # stdoutは表示しない
+                dir_name = f"output/{speaker}"
+                os.makedirs(dir_name, exist_ok=True)
+
+                file_name = f"{turn.start:04.1f}_{turn.end:04.1f}_{(turn.end - turn.start):02.1f}.wav"
                 subprocess.run(
-                    f"ffmpeg -y -i {audio_file_path} -ss {turn.start} -to {turn.end} -ar 16000 -ac 1 -c:a pcm_s16le tmp.wav", shell=True, stdout=subprocess.DEVNULL)
+                    f"ffmpeg -y -i {audio_file_path} -ss {turn.start} -to {turn.end} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}", shell=True, stdout=subprocess.DEVNULL)
 
                 segments_raw, info = model.transcribe(
-                    "tmp.wav", **transcribe_options)
+                    f"{dir_name}/{file_name}", **transcribe_options)
 
                 text = ""
                 for segment_chunk in segments_raw:
@@ -293,9 +305,9 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
                 chunk["text"] = text
                 chunk["speaker"] = speaker
 
-                # tmp.wavをbase64に変換して保存
+                # wavをbase64に変換して保存
                 chunk["audio"] = "data:audio/wav;base64," + base64.b64encode(
-                    open("tmp.wav", "rb").read()).decode("utf-8")
+                    open(f"{dir_name}/{file_name}", "rb").read()).decode("utf-8")
                 segments.append(chunk)
                 print(
                     f"start={turn.start:.1f}s end={turn.end:.1f}s speaker_{speaker}, text={chunk['text']}")
@@ -311,6 +323,7 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
                 chunk["start"] = segment_chunk.start
                 chunk["end"] = segment_chunk.end
                 chunk["text"] = segment_chunk.text
+
                 segments.append(chunk)
                 print(
                     f"start={chunk['start']:.1f}s end={chunk['end']:.1f}s text={chunk['text']}")
@@ -362,7 +375,23 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
                 best_num_speaker).fit(embeddings)
             labels = clustering.labels_
             for i in range(len(segments)):
-                segments[i]["speaker"] = 'SPEAKER ' + str(labels[i] + 1)
+                segments[i]["speaker"] = f"SPEAKER{(labels[i] + 1):02d}"
+                speaker = segments[i]["speaker"]
+
+                # startからendまでの音声を切り出す
+                # stdoutは表示しない
+                dir_name = f"output/{speaker}"
+                os.makedirs(dir_name, exist_ok=True)
+
+                file_name = f"{segments[i]['start']:04.1f}_{segments[i]['end']:04.1f}_{(segments[i]['end'] - segments[i]['start']):02.1f}.wav"
+
+                print(f"{dir_name}/{file_name}")
+                subprocess.run(
+                    f"ffmpeg -y -i {audio_file_path} -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}", shell=True, stdout=subprocess.DEVNULL)
+
+                # wavをbase64に変換して保存
+                segments[i]["audio"] = "data:audio/wav;base64," + base64.b64encode(
+                    open(f"{dir_name}/{file_name}", "rb").read()).decode("utf-8")
 
         # Make output
         objects = {
@@ -433,8 +462,8 @@ selected_whisper_model = gr.Dropdown(
 number_speakers = gr.Number(
     precision=0, value=0, label="Input number of speakers for better results. If value=0, model will automatic find the best number of speakers", interactive=True)
 number_cut_time = gr.Number(
-    precision=0, value=30, label="Input number of audio cut time. If value=0, not cut audio", interactive=True)
-is_pyannote = gr.Checkbox(label="Use Pyannote", value=True, interactive=True)
+    precision=0, value=0, label="Input number of audio cut time. If value=0, not cut audio", interactive=True)
+is_pyannote = gr.Checkbox(label="Use Pyannote", value=False, interactive=True)
 system_info = gr.Markdown(
     f"*Memory: {memory.total / (1024 * 1024 * 1024):.2f}GB, used: {memory.percent}%, available: {memory.available / (1024 * 1024 * 1024):.2f}GB*")
 download_transcript = gr.File(label="Download transcript")
