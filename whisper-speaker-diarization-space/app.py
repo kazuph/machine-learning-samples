@@ -26,130 +26,33 @@ import torch
 import pyannote.audio
 
 from pyannote.audio import Pipeline
+from pydub import AudioSegment
 
 whisper_models = ["tiny", "base", "small", "medium", "large-v1", "large-v2"]
 source_languages = {
     "en": "English",
     "zh": "Chinese",
-    "de": "German",
-    "es": "Spanish",
-    "ru": "Russian",
-    "ko": "Korean",
-    "fr": "French",
     "ja": "Japanese",
-    "pt": "Portuguese",
-    "tr": "Turkish",
-    "pl": "Polish",
-    "ca": "Catalan",
-    "nl": "Dutch",
-    "ar": "Arabic",
-    "sv": "Swedish",
-    "it": "Italian",
-    "id": "Indonesian",
-    "hi": "Hindi",
-    "fi": "Finnish",
-    "vi": "Vietnamese",
-    "he": "Hebrew",
-    "uk": "Ukrainian",
-    "el": "Greek",
-    "ms": "Malay",
-    "cs": "Czech",
-    "ro": "Romanian",
-    "da": "Danish",
-    "hu": "Hungarian",
-    "ta": "Tamil",
-    "no": "Norwegian",
-    "th": "Thai",
-    "ur": "Urdu",
-    "hr": "Croatian",
-    "bg": "Bulgarian",
-    "lt": "Lithuanian",
-    "la": "Latin",
-    "mi": "Maori",
-    "ml": "Malayalam",
-    "cy": "Welsh",
-    "sk": "Slovak",
-    "te": "Telugu",
-    "fa": "Persian",
-    "lv": "Latvian",
-    "bn": "Bengali",
-    "sr": "Serbian",
-    "az": "Azerbaijani",
-    "sl": "Slovenian",
-    "kn": "Kannada",
-    "et": "Estonian",
-    "mk": "Macedonian",
-    "br": "Breton",
-    "eu": "Basque",
-    "is": "Icelandic",
-    "hy": "Armenian",
-    "ne": "Nepali",
-    "mn": "Mongolian",
-    "bs": "Bosnian",
-    "kk": "Kazakh",
-    "sq": "Albanian",
-    "sw": "Swahili",
-    "gl": "Galician",
-    "mr": "Marathi",
-    "pa": "Punjabi",
-    "si": "Sinhala",
-    "km": "Khmer",
-    "sn": "Shona",
-    "yo": "Yoruba",
-    "so": "Somali",
-    "af": "Afrikaans",
-    "oc": "Occitan",
-    "ka": "Georgian",
-    "be": "Belarusian",
-    "tg": "Tajik",
-    "sd": "Sindhi",
-    "gu": "Gujarati",
-    "am": "Amharic",
-    "yi": "Yiddish",
-    "lo": "Lao",
-    "uz": "Uzbek",
-    "fo": "Faroese",
-    "ht": "Haitian creole",
-    "ps": "Pashto",
-    "tk": "Turkmen",
-    "nn": "Nynorsk",
-    "mt": "Maltese",
-    "sa": "Sanskrit",
-    "lb": "Luxembourgish",
-    "my": "Myanmar",
-    "bo": "Tibetan",
-    "tl": "Tagalog",
-    "mg": "Malagasy",
-    "as": "Assamese",
-    "tt": "Tatar",
-    "haw": "Hawaiian",
-    "ln": "Lingala",
-    "ha": "Hausa",
-    "ba": "Bashkir",
-    "jw": "Javanese",
-    "su": "Sundanese",
+    # "de": "German", "es": "Spanish", "ru": "Russian", "ko": "Korean", "fr": "French", "pt": "Portuguese", "tr": "Turkish", "pl": "Polish", "ca": "Catalan", "nl": "Dutch", "ar": "Arabic", "sv": "Swedish", "it": "Italian", "id": "Indonesian", "hi": "Hindi", "fi": "Finnish", "vi": "Vietnamese", "he": "Hebrew", "uk": "Ukrainian", "el": "Greek", "ms": "Malay", "cs": "Czech", "ro": "Romanian", "da": "Danish", "hu": "Hungarian", "ta": "Tamil", "no": "Norwegian", "th": "Thai", "ur": "Urdu", "hr": "Croatian", "bg": "Bulgarian", "lt": "Lithuanian", "la": "Latin", "mi": "Maori", "ml": "Malayalam", "cy": "Welsh", "sk": "Slovak", "te": "Telugu", "fa": "Persian", "lv": "Latvian", "bn": "Bengali", "sr": "Serbian", "az": "Azerbaijani", "sl": "Slovenian", "kn": "Kannada", "et": "Estonian", "mk": "Macedonian", "br": "Breton", "eu": "Basque", "is": "Icelandic", "hy": "Armenian", "ne": "Nepali", "mn": "Mongolian", "bs": "Bosnian", "kk": "Kazakh", "sq": "Albanian", "sw": "Swahili", "gl": "Galician", "mr": "Marathi", "pa": "Punjabi", "si": "Sinhala", "km": "Khmer", "sn": "Shona", "yo": "Yoruba", "so": "Somali", "af": "Afrikaans", "oc": "Occitan", "ka": "Georgian", "be": "Belarusian", "tg": "Tajik", "sd": "Sindhi", "gu": "Gujarati", "am": "Amharic", "yi": "Yiddish", "lo": "Lao", "uz": "Uzbek", "fo": "Faroese", "ht": "Haitian creole", "ps": "Pashto", "tk": "Turkmen", "nn": "Nynorsk", "mt": "Maltese", "sa": "Sanskrit", "lb": "Luxembourgish", "my": "Myanmar", "bo": "Tibetan", "tl": "Tagalog", "mg": "Malagasy", "as": "Assamese", "tt": "Tatar", "haw": "Hawaiian", "ln": "Lingala", "ha": "Hausa", "ba": "Bashkir", "jw": "Javanese", "su": "Sundanese",
 }
 
 source_language_list = [key[0] for key in source_languages.items()]
 
-# MODEL_NAME = "vumichien/whisper-medium-jp"
+# # MODEL_NAME = "vumichien/whisper-medium-jp"
 MODEL_NAME = "vumichien/whisper-large-v2-mix-jp"
-lang = "ja"
+# lang = "ja"
+#
+# device = 0 if torch.cuda.is_available() else "cpu"
+# pipe = pipeline(
+#     task="automatic-speech-recognition",
+#     model=MODEL_NAME,
+#     chunk_length_s=30,
+#     device=device,
+# )
+# pipe.model.config.forced_decoder_ids = pipe.tokenizer.get_decoder_prompt_ids(
+#     language=lang, task="transcribe")
 
-device = 0 if torch.cuda.is_available() else "cpu"
-pipe = pipeline(
-    task="automatic-speech-recognition",
-    model=MODEL_NAME,
-    chunk_length_s=30,
-    device=device,
-)
 os.makedirs('output', exist_ok=True)
-pipe.model.config.forced_decoder_ids = pipe.tokenizer.get_decoder_prompt_ids(
-    language=lang, task="transcribe")
-
-embedding_model = PretrainedSpeakerEmbedding(
-    "speechbrain/spkrec-ecapa-voxceleb",
-    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
 
 def transcribe(microphone, file_upload):
@@ -270,7 +173,7 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
 
         # Transcribe audio
         options = dict(language=selected_source_lang,
-                       beam_size=5, best_of=5)
+                       beam_size=5, best_of=5, word_timestamps=True)
         transcribe_options = dict(task="transcribe", **options)
 
         segments = []
@@ -310,7 +213,7 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
                     open(f"{dir_name}/{file_name}", "rb").read()).decode("utf-8")
                 segments.append(chunk)
                 print(
-                    f"start={turn.start:.1f}s end={turn.end:.1f}s speaker_{speaker}, text={chunk['text']}")
+                    f"start={turn.start:.2f}s end={turn.end:.2f}s speaker_{speaker}, text={chunk['text']}")
 
             print("transcribe audio done with pyannote")
         else:
@@ -326,7 +229,7 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
 
                 segments.append(chunk)
                 print(
-                    f"start={chunk['start']:.1f}s end={chunk['end']:.1f}s text={chunk['text']}")
+                    f"start={chunk['start']:.2f}s end={chunk['end']:.2f}s text={chunk['text']}")
 
             print("transcribe audio done with fast whisper")
     except Exception as e:
@@ -334,6 +237,9 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
 
     try:
         if not is_pyannote:
+            embedding_model = PretrainedSpeakerEmbedding(
+                "speechbrain/spkrec-ecapa-voxceleb",
+                device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
             def segment_embedding(segment):
                 audio = Audio()
@@ -383,11 +289,15 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
                 dir_name = f"output/{speaker}"
                 os.makedirs(dir_name, exist_ok=True)
 
-                file_name = f"{segments[i]['start']:04.1f}_{segments[i]['end']:04.1f}_{(segments[i]['end'] - segments[i]['start']):02.1f}.wav"
+                file_name = f"{segments[i]['start']:04.2f}_{segments[i]['end']:04.2f}_{(segments[i]['end'] - segments[i]['start']):02.1f}.wav"
 
                 print(f"{dir_name}/{file_name}")
                 subprocess.run(
-                    f"ffmpeg -y -i {audio_file_path} -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}", shell=True, stdout=subprocess.DEVNULL)
+                    f"ffmpeg -y -i {audio_file_path} -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}",
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
 
                 # wavをbase64に変換して保存
                 segments[i]["audio"] = "data:audio/wav;base64," + base64.b64encode(
@@ -442,6 +352,37 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
         df_results_html = df_results.to_html(escape=False, render_links=False,
                                              index=False, header=False)
         df_results.to_csv(save_path)
+
+        # output以下のディレクトリを列挙
+        output_dirs = [f for f in os.listdir(
+            "output") if os.path.isdir(os.path.join("output", f))]
+
+        for output_dir in output_dirs:
+            output_dir = "output/" + output_dir
+            # すべてのwavファイルを連結するための空のAudioSegmentオブジェクトを作成します
+            combined = AudioSegment.empty()
+
+            # 指定されたディレクトリ内のすべてのファイルをループします
+            filenames = os.listdir(output_dir)
+            filenames.sort()
+            for filename in filenames:
+                if filename.endswith(".wav"):
+                    # wavファイルを見つけたら、それをAudioSegmentオブジェクトに読み込みます
+                    audio = AudioSegment.from_wav(
+                        os.path.join(output_dir, filename))
+                    # その音声を連結します
+                    combined += audio
+
+            # 連結した音声ファイルを保存します
+            combined.export(
+                f"{output_dir}/combined.wav", format="wav")
+
+            # 連結した音声ファイルの長さをミリ秒単位で取得し、秒単位に変換します
+            length_seconds = len(combined) / 1000
+
+            print(
+                f"{output_dir}/combined.wav: {length_seconds}s")
+
         return df_results_html, system_info, save_path
 
     except Exception as e:
@@ -542,7 +483,7 @@ with demo:
         with gr.Row():
             with gr.Column():
                 download_transcript.render()
-                transcription_df.render()
+                # transcription_df.render()
                 transcription_html.render()
                 system_info.render()
                 gr.Markdown('''<center><img src='https://visitor-badge.glitch.me/badge?page_id=WhisperDiarizationSpeakers' alt='visitor badge'><a href="https://opensource.org/licenses/Apache-2.0"><img src='https://img.shields.io/badge/License-Apache_2.0-blue.svg' alt='License: Apache 2.0'></center>''')

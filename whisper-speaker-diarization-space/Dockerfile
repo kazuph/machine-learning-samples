@@ -12,6 +12,7 @@ RUN pip3 uninstall -y cmake
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
+RUN pip3 install pydub
 
 # RUN pip3 install --no-cache-dir \
 #   black \
@@ -39,4 +40,4 @@ RUN pip3 install -r requirements.txt
 #     opencv-python
 
 COPY . .
-CMD ["python3", "app.py", "--device", "cuda", "--api"]
+CMD ["python3", "app.py"]
