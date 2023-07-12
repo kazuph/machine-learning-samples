@@ -52,8 +52,6 @@ MODEL_NAME = "vumichien/whisper-large-v2-mix-jp"
 # pipe.model.config.forced_decoder_ids = pipe.tokenizer.get_decoder_prompt_ids(
 #     language=lang, task="transcribe")
 
-os.makedirs('output', exist_ok=True)
-
 
 def transcribe(microphone, file_upload):
     warn_output = ""
@@ -122,6 +120,11 @@ def get_youtube(video_url):
 
 def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisper_model, num_speakers, num_cut_time, is_pyannote):
 
+    # output/以下は一度空にする
+    if os.path.exists("output"):
+        shutil.rmtree("output")
+    os.makedirs('output', exist_ok=True)
+
     if is_pyannote:
         AUTH_TOKEN = os.environ.get("HUGGINGFACE_AUTH_TOKEN", None)
         diarization_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@2.1",
@@ -150,12 +153,13 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
 
     file_path = video_file_path or audio_file_path
     print(file_path)
+    # Read and convert youtube video
+    _, file_ending = os.path.splitext(f'{file_path}')
+    print(f'file enging is {file_ending}')
+    audio_file_path = file_path.replace(file_ending, ".wav")
+    print(audio_file_path)
 
     try:
-        # Read and convert youtube video
-        _, file_ending = os.path.splitext(f'{file_path}')
-        print(f'file enging is {file_ending}')
-        audio_file_path = file_path.replace(file_ending, ".wav")
         print("starting conversion to wav")
         if num_cut_time == 0:
             os.system(
@@ -177,9 +181,6 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
         transcribe_options = dict(task="transcribe", **options)
 
         segments = []
-
-        # output/以下は一度空にする
-        shutil.rmtree("output")
 
         if is_pyannote:
             diarization = diarization_pipeline(audio_file_path)
@@ -291,12 +292,12 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
 
                 file_name = f"{segments[i]['start']:04.2f}_{segments[i]['end']:04.2f}_{(segments[i]['end'] - segments[i]['start']):02.1f}.wav"
 
-                print(f"{dir_name}/{file_name}")
+                print(f"audio_file_path: {audio_file_path}")
+                print(f"output_file_path: {dir_name}/{file_name}")
                 subprocess.run(
-                    f"ffmpeg -y -i {audio_file_path} -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}",
+                    f"ffmpeg -y -i '{audio_file_path}' -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}",
                     shell=True,
                     stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
                 )
 
                 # wavをbase64に変換して保存
