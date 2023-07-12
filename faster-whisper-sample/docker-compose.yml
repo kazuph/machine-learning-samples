@@ -1,0 +1,30 @@
+version: '3.9'
+services:
+  app:
+    tty: true
+    build:
+      context: .
+      dockerfile: "Dockerfile"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - HUGGINGFACE_AUTH_TOKEN=${HUGGINGFACE_AUTH_TOKEN}
+    volumes:
+      - .:/app
+      - python-packages:/root/.local/share
+      - hf-cache:/root/.cache
+    command:
+      # sleep endless
+      tail -f /dev/null
+    deploy:
+      resources:
+        reservations:
+          devices:
+              - driver: nvidia
+                device_ids: ['0']
+                capabilities: [compute, utility]
+
+volumes:
+  python-packages:
+    name: python-packages
+  hf-cache:
+    name: hf-cache
