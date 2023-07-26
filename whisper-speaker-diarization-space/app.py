@@ -1,4 +1,10 @@
 import gradio as gr
+import os
+
+import matplotlib.pyplot as plt
+import librosa
+import librosa.display
+import numpy as np
 import pandas as pd
 
 from youtube_download import get_youtube
@@ -8,7 +14,49 @@ from whisper import speech_to_text
 
 
 def load_audio(file_path):
-    return file_path
+    return file_path, plot_waveform((file_path, "rb"))
+
+
+def plot_spectrogram(file):
+    y, sr = librosa.load(file.name, sr=None)
+    D = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
+    plt.figure(figsize=(10, 4))
+    librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='log')
+    plt.colorbar(format='%+2.0f dB')
+    plt.title('Spectrogram')
+    plt.tight_layout()
+    return plt.gcf()
+
+
+def plot_waveform(input_path):
+    # fileがmp3だった場合はffmpegでwavに変換する
+    if input_path.split(".")[-1] == "mp3":
+        output_path = input_path.rsplit(".", 1)[0] + ".wav"
+        os.system(
+            f'ffmpeg -y -i "{input_path}" -ar 16000 -ac 1 -c:a pcm_s16le "{output_path}"')
+        input_path = output_path
+
+    y, sr = librosa.load(input_path, sr=None)
+    plt.figure(figsize=(14, 5))
+    librosa.display.waveshow(y, sr=sr)
+    plt.title('Waveform')
+    plt.show()
+    return plt.gcf()
+
+
+def wrap_get_youtube(youtube_url):
+    output_file_path, output_file_path, file_name = get_youtube(youtube_url)
+    return output_file_path, output_file_path, file_name, plot_waveform(output_file_path)
+
+
+def wrap_divide_audio(file_path, file_name):
+    output_file_path = divide_audio(file_path, file_name)
+    return output_file_path, plot_waveform(output_file_path)
+
+
+def wrap_trim_silence(file_path, file_name):
+    output_file_path = trim_silence(file_path, file_name)
+    return output_file_path, plot_waveform(output_file_path)
 
 
 # ---- Gradio Layout -----
@@ -30,6 +78,10 @@ separated_audio_in = gr.Audio(
     label="音源分離済みAudio file", mirror_webcam=False, type="filepath")
 cut_audio_in = gr.Audio(
     label="無音カット済みAudio file", mirror_webcam=False, type="filepath")
+
+raw_audio_plot = gr.Plot()
+separated_audio_plot = gr.Plot()
+cut_audio_plot = gr.Plot()
 
 df_init = pd.DataFrame(columns=['Start', 'End', 'Speaker', 'Text'])
 selected_source_lang = gr.Dropdown(choices=source_language_list, type="value",
@@ -71,12 +123,13 @@ with demo:
         with gr.Column():
             youtube_url_in.render()
             download_youtube_btn = gr.Button("Download Youtube video")
-            download_youtube_btn.click(get_youtube, [youtube_url_in], [
-                audio_in, file_path_in, file_name_in])
+            download_youtube_btn.click(wrap_get_youtube, [youtube_url_in], [
+                audio_in, file_path_in, file_name_in, raw_audio_plot])
             file_name_in.render()
             file_path_in.render()
             load_audio_btn = gr.Button("Load Audio from File Path")
-            load_audio_btn.click(load_audio, [file_path_in], [audio_in])
+            load_audio_btn.click(load_audio, [file_path_in], [
+                                 audio_in, raw_audio_plot])
 
     with gr.Column():
         with gr.Column():
@@ -84,24 +137,27 @@ with demo:
                 ## 音声のみの分離
                 ''')
             audio_in.render()
+            raw_audio_plot.render()
             separate_btn = gr.Button("Separate audio")
-            separate_btn.click(divide_audio, [audio_in, file_name_in], [
-                               separated_audio_in])
+            separate_btn.click(wrap_divide_audio, [audio_in, file_name_in], [
+                               separated_audio_in, separated_audio_plot])
     with gr.Column():
         with gr.Column():
             gr.Markdown('''
                 ## 無音部分のカット
                 ''')
             separated_audio_in.render()
+            separated_audio_plot.render()
             cut_btn = gr.Button("cut audio")
-            cut_btn.click(trim_silence, [separated_audio_in, file_name_in], [
-                cut_audio_in])
+            cut_btn.click(wrap_trim_silence, [separated_audio_in, file_name_in], [
+                cut_audio_in, cut_audio_plot])
     with gr.Column():
         with gr.Column():
             gr.Markdown('''
                 ## 音声認識と話者分離
                 ''')
             cut_audio_in.render()
+            cut_audio_plot.render()
             with gr.Column():
                 selected_source_lang.render()
                 selected_whisper_model.render()

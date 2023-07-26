@@ -1,4 +1,5 @@
 import yt_dlp
+import os
 
 
 def get_youtube(video_url):
@@ -9,7 +10,7 @@ def get_youtube(video_url):
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'outtmpl': 'downloads/%(title)s.%(ext)s',
+        'outtmpl': '/app/downloads/%(title)s.%(ext)s',
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -20,6 +21,10 @@ def get_youtube(video_url):
     print("Success download audio")
     print(abs_audio_path)
 
-    file_name = abs_audio_path.split("/")[-1].split(".")[0]
+    # ファイル名にする上で邪魔な文字を削除する
+    audio_path = abs_audio_path.replace(" ", "_")
+    os.rename(abs_audio_path, audio_path)
+
+    file_name = audio_path.split("/")[-1].split(".")[0]
 
     return abs_audio_path, abs_audio_path, file_name

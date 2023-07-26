@@ -45,7 +45,8 @@ def speech_to_text(input_path, file_name, selected_source_lang, whisper_model, n
     try:
         print("starting conversion to wav")
         os.system(
-            f'ffmpeg -y -i "{input_path}" -ar 16000 -ac 1 -c:a pcm_s16le "{output_path}"')
+            f'ffmpeg -y -i "{input_path}" -ac 1 "{output_path}"')
+        # output_path = input_path
 
         # Get duration
         with contextlib.closing(wave.open(output_path, 'r')) as f:
@@ -133,18 +134,22 @@ def speech_to_text(input_path, file_name, selected_source_lang, whisper_model, n
             dir_name = f"output/{speaker}"
             os.makedirs(dir_name, exist_ok=True)
 
-            file_name = f"{segments[i]['start']:04.2f}_{segments[i]['end']:04.2f}_{abs(segments[i]['end'] - segments[i]['start']):02.1f}.wav"
+            # file_name = f"{segments[i]['start']:04.2f}_{segments[i]['end']:04.2f}_{abs(segments[i]['end'] - segments[i]['start']):02.1f}.wav"
+            file_name = f"{segments[i]['start']:04.2f}_{segments[i]['end']:04.2f}_{abs(segments[i]['end'] - segments[i]['start']):02.1f}.mp3"
 
             print(f"audio_file_path: {output_path}")
             print(f"output_file_path: {dir_name}/{file_name}")
+            # subprocess.run(
+            #     f"ffmpeg -y -i '{output_path}' -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}",
+            #     shell=True,
+            #     stdout=subprocess.DEVNULL)
             subprocess.run(
-                f"ffmpeg -y -i '{output_path}' -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}",
+                f"ffmpeg -y -i '{output_path}' -ss {segments[i]['start']} -to {segments[i]['end']} {dir_name}/{file_name}",
                 shell=True,
-                stdout=subprocess.DEVNULL,
-            )
+                stdout=subprocess.DEVNULL)
 
             # wavをbase64に変換して保存
-            segments[i]["audio"] = "data:audio/wav;base64," + base64.b64encode(
+            segments[i]["audio"] = "data:audio/mp3;base64," + base64.b64encode(
                 open(f"{dir_name}/{file_name}", "rb").read()).decode("utf-8")
 
         # Make output
@@ -183,23 +188,23 @@ def speech_to_text(input_path, file_name, selected_source_lang, whisper_model, n
             filenames = os.listdir(output_dir)
             filenames.sort()
             for filename in filenames:
-                if filename.endswith(".wav"):
+                if filename.endswith(".mp3"):
                     print(f"filename: {filename}")
                     # wavファイルを見つけたら、それをAudioSegmentオブジェクトに読み込みます
-                    audio = AudioSegment.from_wav(
+                    audio = AudioSegment.from_mp3(
                         os.path.join(output_dir, filename))
                     # その音声を連結します
                     combined += audio
 
             # 連結した音声ファイルを保存します
             combined.export(
-                f"{output_dir}/combined.wav", format="wav")
+                f"{output_dir}/combined.mp3", format="mp3")
 
             # 連結した音声ファイルの長さをミリ秒単位で取得し、秒単位に変換します
             length_seconds = len(combined) / 1000
 
             print(
-                f"{output_dir}/combined.wav: {length_seconds}s")
+                f"{output_dir}/combined.mp3: {length_seconds}s")
 
         return df_results_html, save_path
 

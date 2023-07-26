@@ -8,12 +8,12 @@ def divide_audio(input_path, file_name):
         file_name = input_path.split("/")[-1].split(".")[0]
         print(f"file_name: {file_name}")
     else:
-        input_path = f"downloads/{file_name}.mp3"
+        input_path = f"/app/downloads/{file_name}.mp3"
     print(f"input_path: {input_path}")
 
     model_name = "htdemucs_ft"
     demucs.separate.main(
-        ["--two-stems", "vocals", "-n", model_name, input_path, "-o", "downloads"])
+        ["--two-stems", "vocals", "-n", model_name, "-o", "downloads", f"{input_path}"])
 
     # downloadsに作成されたディレクトリの中で最も更新時間が新しいものを取得
     dirs = os.listdir(f"downloads/{model_name}")
