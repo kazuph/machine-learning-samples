@@ -237,72 +237,71 @@ def speech_to_text(audio_file_path, video_file_path, selected_source_lang, whisp
         raise RuntimeError("Error converting video to audio")
 
     try:
-        if not is_pyannote:
-            embedding_model = PretrainedSpeakerEmbedding(
-                "speechbrain/spkrec-ecapa-voxceleb",
-                device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        embedding_model = PretrainedSpeakerEmbedding(
+            "speechbrain/spkrec-ecapa-voxceleb",
+            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
-            def segment_embedding(segment):
-                audio = Audio()
-                start = segment["start"]
-                # Whisper overshoots the end timestamp in the last segment
-                end = min(duration, segment["end"])
-                clip = Segment(start, end)
-                waveform, sample_rate = audio.crop(audio_file_path, clip)
-                return embedding_model(waveform[None])
+        def segment_embedding(segment):
+            audio = Audio()
+            start = segment["start"]
+            # Whisper overshoots the end timestamp in the last segment
+            end = min(duration, segment["end"])
+            clip = Segment(start, end)
+            waveform, sample_rate = audio.crop(audio_file_path, clip)
+            return embedding_model(waveform[None])
 
-            embeddings = np.zeros(shape=(len(segments), 192))
-            for i, segment in enumerate(segments):
-                embeddings[i] = segment_embedding(segment)
-            embeddings = np.nan_to_num(embeddings)
-            print(f'Embedding shape: {embeddings.shape}')
+        embeddings = np.zeros(shape=(len(segments), 192))
+        for i, segment in enumerate(segments):
+            embeddings[i] = segment_embedding(segment)
+        embeddings = np.nan_to_num(embeddings)
+        print(f'Embedding shape: {embeddings.shape}')
 
-            if num_speakers == 0:
-                print("Finding best number of speakers")
-                # Find the best number of speakers
-                score_num_speakers = {}
+        if num_speakers == 0:
+            print("Finding best number of speakers")
+            # Find the best number of speakers
+            score_num_speakers = {}
 
-                for num_speakers in range(2, 8+1):
-                    print(f"Number of speakers: {num_speakers}")
-                    clustering = AgglomerativeClustering(
-                        num_speakers).fit(embeddings)
-                    score = silhouette_score(
-                        embeddings, clustering.labels_, metric='euclidean')
-                    score_num_speakers[num_speakers] = score
-                best_num_speaker = max(
-                    score_num_speakers, key=lambda x: score_num_speakers[x])
-                print(
-                    f"The best number of speakers: {best_num_speaker} with {score_num_speakers[best_num_speaker]} score")
-            else:
-                best_num_speaker = num_speakers
-                print(f"Number of speakers: {best_num_speaker}")
+            for num_speakers in range(2, 8+1):
+                print(f"Number of speakers: {num_speakers}")
+                clustering = AgglomerativeClustering(
+                    num_speakers).fit(embeddings)
+                score = silhouette_score(
+                    embeddings, clustering.labels_, metric='euclidean')
+                score_num_speakers[num_speakers] = score
+            best_num_speaker = max(
+                score_num_speakers, key=lambda x: score_num_speakers[x])
+            print(
+                f"The best number of speakers: {best_num_speaker} with {score_num_speakers[best_num_speaker]} score")
+        else:
+            best_num_speaker = num_speakers
+            print(f"Number of speakers: {best_num_speaker}")
 
-            # Assign speaker label
-            clustering = AgglomerativeClustering(
-                best_num_speaker).fit(embeddings)
-            labels = clustering.labels_
-            for i in range(len(segments)):
-                segments[i]["speaker"] = f"SPEAKER{(labels[i] + 1):02d}"
-                speaker = segments[i]["speaker"]
+        # Assign speaker label
+        clustering = AgglomerativeClustering(
+            best_num_speaker).fit(embeddings)
+        labels = clustering.labels_
+        for i in range(len(segments)):
+            segments[i]["speaker"] = f"SPEAKER{(labels[i] + 1):02d}"
+            speaker = segments[i]["speaker"]
 
-                # startからendまでの音声を切り出す
-                # stdoutは表示しない
-                dir_name = f"output/{speaker}"
-                os.makedirs(dir_name, exist_ok=True)
+            # startからendまでの音声を切り出す
+            # stdoutは表示しない
+            dir_name = f"output/{speaker}"
+            os.makedirs(dir_name, exist_ok=True)
 
-                file_name = f"{segments[i]['start']:04.2f}_{segments[i]['end']:04.2f}_{(segments[i]['end'] - segments[i]['start']):02.1f}.wav"
+            file_name = f"{segments[i]['start']:04.2f}_{segments[i]['end']:04.2f}_{abs(segments[i]['end'] - segments[i]['start']):02.1f}.wav"
 
-                print(f"audio_file_path: {audio_file_path}")
-                print(f"output_file_path: {dir_name}/{file_name}")
-                subprocess.run(
-                    f"ffmpeg -y -i '{audio_file_path}' -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}",
-                    shell=True,
-                    stdout=subprocess.DEVNULL,
-                )
+            print(f"audio_file_path: {audio_file_path}")
+            print(f"output_file_path: {dir_name}/{file_name}")
+            subprocess.run(
+                f"ffmpeg -y -i '{audio_file_path}' -ss {segments[i]['start']} -to {segments[i]['end']} -ar 16000 -ac 1 -c:a pcm_s16le {dir_name}/{file_name}",
+                shell=True,
+                stdout=subprocess.DEVNULL,
+            )
 
-                # wavをbase64に変換して保存
-                segments[i]["audio"] = "data:audio/wav;base64," + base64.b64encode(
-                    open(f"{dir_name}/{file_name}", "rb").read()).decode("utf-8")
+            # wavをbase64に変換して保存
+            segments[i]["audio"] = "data:audio/wav;base64," + base64.b64encode(
+                open(f"{dir_name}/{file_name}", "rb").read()).decode("utf-8")
 
         # Make output
         objects = {

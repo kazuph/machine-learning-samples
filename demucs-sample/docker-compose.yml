@@ -15,8 +15,12 @@ services:
     volumes:
       - .:/app
       - python-packages:/root/.local/share
+      - hf-cache:/root/.cache
     ports:
       - "8501:8501"
 
 volumes:
   python-packages:
+    name: python-packages
+  hf-cache:
+    name: hf-cache

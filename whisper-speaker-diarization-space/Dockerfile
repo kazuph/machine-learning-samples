@@ -9,35 +9,10 @@ WORKDIR /app
 
 RUN pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/cu118
 RUN pip3 uninstall -y cmake
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt
-
 RUN pip3 install pydub
 
-# RUN pip3 install --no-cache-dir \
-#   black \
-#   jupyterlab \
-#   jupyterlab_code_formatter \
-#   jupyterlab-git \
-#   lckr-jupyterlab-variableinspector \
-#   jupyterlab_widgets \
-#   ipywidgets \
-#   import-ipynb
-
-# RUN pip install --no-cache-dir \
-#     pandas \
-#     scipy \
-#     scikit-learn \
-#     pycaret \
-#     matplotlib \
-#     japanize_matplotlib \
-#     mlxtend \
-#     seaborn \
-#     plotly \
-#     requests \
-#     beautifulsoup4 \
-#     Pillow \
-#     opencv-python
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
 
 COPY . .
 CMD ["python3", "app.py"]
