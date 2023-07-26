@@ -194,6 +194,9 @@ def speech_to_text(audio_file_path, selected_source_lang, whisper_model, num_spe
     except Exception as e:
         raise RuntimeError("Error converting video to audio")
 
+
+def diarization(audio_file_path, segments, num_speakers, duration):
+
     try:
         embedding_model = PretrainedSpeakerEmbedding(
             "speechbrain/spkrec-ecapa-voxceleb",
@@ -363,65 +366,61 @@ demo.encrypt = False
 
 
 with demo:
-    with gr.Tab("Whisper speaker diarization"):
-        gr.Markdown('''
+    gr.Markdown('''
             <div>
             <h1 style='text-align: center'>Whisper speaker diarization</h1>
-            This space uses Whisper models from <a href='https://github.com/openai/whisper' target='_blank'><b>OpenAI</b></a> with <a href='https://github.com/guillaumekln/faster-whisper' target='_blank'><b>CTranslate2</b></a> which is a fast inference engine for Transformer models to recognize the speech (4 times faster than original openai model with same accuracy)
-            and ECAPA-TDNN model from <a href='https://github.com/speechbrain/speechbrain' target='_blank'><b>SpeechBrain</b></a> to encode and clasify speakers
             </div>
         ''')
 
-        with gr.Row():
-            gr.Markdown('''
-            ### Transcribe youtube link using OpenAI Whisper
-            ##### 1. Using Open AI's Whisper model to seperate audio into segments and generate transcripts.
-            ##### 2. Generating speaker embeddings for each segments.
-            ##### 3. Applying agglomerative clustering on the embeddings to identify the speaker for each segment.
+    # YoutubeのURLから音声をダウンロードする
+    with gr.Column():
+        gr.Markdown('''
+            ## Youtubeの動画のダウンロード（音声のみ）
             ''')
-
-        with gr.Row():
+        with gr.Column():
             gr.Markdown('''
-                ### You can test by following examples:
-                ''')
-        examples = gr.Examples(examples=["https://www.youtube.com/watch?v=j7BfEzAFuYc&t=32s",
-                                         "https://www.youtube.com/watch?v=-UX0X45sYe4",
-                                         "https://www.youtube.com/watch?v=7minSgqi-Gw"],
-                               label="Examples", inputs=[youtube_url_in])
-
-        with gr.Row():
-            with gr.Column():
-                youtube_url_in.render()
-                download_youtube_btn = gr.Button("Download Youtube video")
-                download_youtube_btn.click(get_youtube, [youtube_url_in], [
-                    audio_in])
-
-        with gr.Row():
-            with gr.Column():
-                audio_in.render()
-                separate_btn = gr.Button("Separate audio")
-                separate_btn.click(separate_audio, [audio_in], [
-                                   separated_audio_in])
-        with gr.Row():
-            with gr.Column():
-                separated_audio_in.render()
-                cut_btn = gr.Button("cut audio")
-                cut_btn.click(cut_audio, [separated_audio_in], [
-                    cut_audio_in])
-        with gr.Row():
-            with gr.Column():
-                cut_audio_in.render()
-                with gr.Column():
-                    gr.Markdown('''
-                    ##### Here you can start the transcription process.
-                    ##### Please select the source language for transcription.
-                    ##### You can select a range of assumed numbers of speakers.
+                    ### You can test by following examples:
                     ''')
+            examples = gr.Examples(examples=["https://www.youtube.com/watch?v=j7BfEzAFuYc&t=32s",
+                                             "https://www.youtube.com/watch?v=-UX0X45sYe4",
+                                             "https://www.youtube.com/watch?v=7minSgqi-Gw"],
+                                   label="Examples", inputs=[youtube_url_in])
+
+        with gr.Column():
+            youtube_url_in.render()
+            download_youtube_btn = gr.Button("Download Youtube video")
+            download_youtube_btn.click(get_youtube, [youtube_url_in], [
+                audio_in])
+
+    with gr.Column():
+        with gr.Column():
+            gr.Markdown('''
+                ## 音声のみの分離
+                ''')
+            audio_in.render()
+            separate_btn = gr.Button("Separate audio")
+            separate_btn.click(separate_audio, [audio_in], [
+                               separated_audio_in])
+    with gr.Column():
+        with gr.Column():
+            gr.Markdown('''
+                ## 無音部分のカット
+                ''')
+            separated_audio_in.render()
+            cut_btn = gr.Button("cut audio")
+            cut_btn.click(cut_audio, [separated_audio_in], [
+                cut_audio_in])
+    with gr.Column():
+        with gr.Column():
+            gr.Markdown('''
+                ## 音声認識
+                ''')
+            cut_audio_in.render()
+            with gr.Column():
                 selected_source_lang.render()
                 selected_whisper_model.render()
-                number_speakers.render()
-                number_cut_time.render()
-                transcribe_btn = gr.Button("Transcribe audio and diarization")
+                transcribe_btn = gr.Button(
+                    "Transcribe audio and diarization")
                 transcribe_btn.click(speech_to_text,
                                      [cut_audio_in, selected_source_lang,
                                          selected_whisper_model, number_speakers, number_cut_time],
@@ -430,17 +429,23 @@ with demo:
                                          download_transcript]
                                      )
 
-        with gr.Row():
+    with gr.Column():
+        with gr.Column():
             gr.Markdown('''
-            ##### Here you will get transcription  output
-            ##### ''')
+                ## 話者分離
+                ''')
+            number_speakers.render()
+            number_cut_time.render()
 
-        with gr.Row():
-            with gr.Column():
-                download_transcript.render()
-                # transcription_df.render()
-                transcription_html.render()
-                system_info.render()
-                gr.Markdown('''<center><img src='https://visitor-badge.glitch.me/badge?page_id=WhisperDiarizationSpeakers' alt='visitor badge'><a href="https://opensource.org/licenses/Apache-2.0"><img src='https://img.shields.io/badge/License-Apache_2.0-blue.svg' alt='License: Apache 2.0'></center>''')
+    with gr.Column():
+        with gr.Column():
+            gr.Markdown('''
+                ## 結果
+                ''')
+            download_transcript.render()
+            # transcription_df.render()
+            transcription_html.render()
+            system_info.render()
+            gr.Markdown('''<center><img src='https://visitor-badge.glitch.me/badge?page_id=WhisperDiarizationSpeakers' alt='visitor badge'><a href="https://opensource.org/licenses/Apache-2.0"><img src='https://img.shields.io/badge/License-Apache_2.0-blue.svg' alt='License: Apache 2.0'></center>''')
 
 demo.queue().launch(debug=True, server_port=7860, server_name="0.0.0.0")
