@@ -9,7 +9,6 @@ services:
       - "8889:7860"
     environment:
       - NVIDIA_VISIBLE_DEVICES=0
-      - HUGGINGFACE_AUTH_TOKEN=${HUGGINGFACE_AUTH_TOKEN}
     volumes:
       - .:/app
       - python-packages:/root/.local/share
