@@ -29,6 +29,7 @@ def plot_spectrogram(file):
 
 
 def plot_waveform(input_path):
+    plt.figure()  # This will create a new figure and clear any existing figure
     # fileがmp3だった場合はffmpegでwavに変換する
     if input_path.split(".")[-1] == "mp3":
         output_path = input_path.rsplit(".", 1)[0] + ".wav"
@@ -40,6 +41,17 @@ def plot_waveform(input_path):
     plt.figure(figsize=(14, 5))
     librosa.display.waveshow(y, sr=sr)
     plt.title('Waveform')
+    plt.show()
+    return plt.gcf()
+
+
+def plot_embedding(embeddings, labels):
+    plt.figure()  # This will create a new figure and clear any existing figure
+    scatter = plt.scatter(embeddings[:, 0], embeddings[:, 1], c=labels)
+
+    legend1 = plt.legend(*scatter.legend_elements(),
+                         loc="upper right", title="Labels")
+    plt.gca().add_artist(legend1)
     plt.show()
     return plt.gcf()
 
@@ -57,6 +69,16 @@ def wrap_divide_audio(file_path, file_name):
 def wrap_trim_silence(file_path, file_name):
     output_file_path = trim_silence(file_path, file_name)
     return output_file_path, plot_waveform(output_file_path)
+
+
+def wrap_speech_to_text(file_path, file_name, selected_source_lang, selected_whisper_model, number_speakers):
+    # [cut_audio_in, file_name_in,
+    #     selected_source_lang, selected_whisper_model, number_speakers],
+    # [transcription_html, download_transcript]
+    df_results_html, download_transcript, embeddings, labels = speech_to_text(
+        file_path, file_name, selected_source_lang, selected_whisper_model, number_speakers)
+
+    return df_results_html, download_transcript, plot_embedding(embeddings, labels)
 
 
 # ---- Gradio Layout -----
@@ -82,6 +104,7 @@ cut_audio_in = gr.Audio(
 raw_audio_plot = gr.Plot()
 separated_audio_plot = gr.Plot()
 cut_audio_plot = gr.Plot()
+embedding_plot = gr.Plot()
 
 df_init = pd.DataFrame(columns=['Start', 'End', 'Speaker', 'Text'])
 selected_source_lang = gr.Dropdown(choices=source_language_list, type="value",
@@ -164,10 +187,11 @@ with demo:
                 number_speakers.render()
                 transcribe_btn = gr.Button(
                     "Transcribe audio and diarization")
-                transcribe_btn.click(speech_to_text,
+                transcribe_btn.click(wrap_speech_to_text,
                                      [cut_audio_in, file_name_in,
                                          selected_source_lang, selected_whisper_model, number_speakers],
-                                     [transcription_html, download_transcript]
+                                     [transcription_html,
+                                         download_transcript, embedding_plot]
                                      )
                 download_transcript.render()
 
@@ -177,6 +201,7 @@ with demo:
                 ## 結果
                 ''')
             # transcription_df.render()
+            embedding_plot.render()
             transcription_html.render()
             gr.Markdown('''<center><img src='https://visitor-badge.glitch.me/badge?page_id=WhisperDiarizationSpeakers' alt='visitor badge'><a href="https://opensource.org/licenses/Apache-2.0"><img src='https://img.shields.io/badge/License-Apache_2.0-blue.svg' alt='License: Apache 2.0'></center>''')
 

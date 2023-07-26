@@ -27,4 +27,4 @@ def get_youtube(video_url):
 
     file_name = audio_path.split("/")[-1].split(".")[0]
 
-    return abs_audio_path, abs_audio_path, file_name
+    return audio_path, audio_path, file_name

@@ -18,6 +18,7 @@ from pyannote.audio.pipelines.speaker_verification import PretrainedSpeakerEmbed
 
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import silhouette_score
+from sklearn.decomposition import PCA
 
 from pydub import AudioSegment
 
@@ -101,6 +102,11 @@ def speech_to_text(input_path, file_name, selected_source_lang, whisper_model, n
         embeddings = np.nan_to_num(embeddings)
         print(f'Embedding shape: {embeddings.shape}')
 
+        # Save embeddings
+        np.save(f'downloads/{file_name}/embeddings.npy', embeddings)
+        pca = PCA(n_components=2)
+        reduced_embeddings = pca.fit_transform(embeddings)
+
         if num_speakers == 0:
             print("Finding best number of speakers")
             # Find the best number of speakers
@@ -126,7 +132,7 @@ def speech_to_text(input_path, file_name, selected_source_lang, whisper_model, n
             best_num_speaker).fit(embeddings)
         labels = clustering.labels_
         for i in range(len(segments)):
-            segments[i]["speaker"] = f"SPEAKER{(labels[i] + 1):02d}"
+            segments[i]["speaker"] = f"SPEAKER{(labels[i]):02d}"
             speaker = segments[i]["speaker"]
 
             # startからendまでの音声を切り出す
@@ -206,7 +212,7 @@ def speech_to_text(input_path, file_name, selected_source_lang, whisper_model, n
             print(
                 f"{output_dir}/combined.mp3: {length_seconds}s")
 
-        return df_results_html, save_path
+        return df_results_html, save_path, reduced_embeddings, labels
 
     except Exception as e:
         raise RuntimeError("Error Running inference with local model", e)
