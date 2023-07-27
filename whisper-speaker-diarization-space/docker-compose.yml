@@ -7,15 +7,24 @@ services:
       dockerfile: "Dockerfile"
     ports:
       - "8889:7860"
+      - "8888:8888"
     environment:
       - NVIDIA_VISIBLE_DEVICES=0
     volumes:
       - .:/app
       - python-packages:/root/.local/share
       - hf-cache:/root/.cache
-    command:
-      # sleep endless
-      tail -f /dev/null
+    # command:
+      # tail -f /dev/null
+    entrypoint: >
+      jupyter-lab
+      --allow-root
+      --ip=0.0.0.0
+      --port=8888
+      --no-browser
+      --NotebookApp.token=''
+      --notebook-dir=/app
+
     deploy:
       resources:
         reservations:

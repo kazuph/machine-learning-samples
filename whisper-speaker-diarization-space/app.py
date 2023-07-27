@@ -134,14 +134,19 @@ with demo:
         gr.Markdown('''
             ## Youtubeの動画のダウンロード（音声のみ）
             ''')
+        # with gr.Column():
+        #     gr.Markdown('''
+        #             ### You can test by following examples:
+        #             ''')
+        #     examples = gr.Examples(examples=["https://www.youtube.com/watch?v=j7BfEzAFuYc&t=32s",
+        #                                      "https://www.youtube.com/watch?v=-UX0X45sYe4",
+        #                                      "https://www.youtube.com/watch?v=7minSgqi-Gw"],
+        #                            label="Examples", inputs=[youtube_url_in])
+
+        # プルダウンで/app/downloads/以下にあるmp3ファイルを選択する
         with gr.Column():
-            gr.Markdown('''
-                    ### You can test by following examples:
-                    ''')
-            examples = gr.Examples(examples=["https://www.youtube.com/watch?v=j7BfEzAFuYc&t=32s",
-                                             "https://www.youtube.com/watch?v=-UX0X45sYe4",
-                                             "https://www.youtube.com/watch?v=7minSgqi-Gw"],
-                                   label="Examples", inputs=[youtube_url_in])
+            gr.PullDown(label="Select mp3 file", choices=[
+                        "sample.mp3"], type="value", value="sample.mp3", interactive=True)
 
         with gr.Column():
             youtube_url_in.render()

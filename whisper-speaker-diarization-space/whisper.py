@@ -152,7 +152,8 @@ def speech_to_text(input_path, file_name, selected_source_lang, whisper_model, n
             subprocess.run(
                 f"ffmpeg -y -i '{output_path}' -ss {segments[i]['start']} -to {segments[i]['end']} {dir_name}/{file_name}",
                 shell=True,
-                stdout=subprocess.DEVNULL)
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL)
 
             # wavをbase64に変換して保存
             segments[i]["audio"] = "data:audio/mp3;base64," + base64.b64encode(

@@ -11,8 +11,22 @@ RUN pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/c
 RUN pip3 uninstall -y cmake
 RUN pip3 install pydub
 
+RUN apt install -y libatlas-base-dev gfortran
+RUN pip3 install --upgrade pip \
+&&  pip3 install --no-cache-dir \
+    black \
+    jupyterlab \
+    jupyterlab_code_formatter \
+    jupyterlab-git \
+    lckr-jupyterlab-variableinspector \
+    jupyterlab_widgets \
+    ipywidgets \
+    import-ipynb
+
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
-COPY . .
+RUN pip3 install jupyter_ai
+
+# COPY . .
 CMD ["python3", "app.py"]
