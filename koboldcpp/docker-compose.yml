@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+  koboldcpp:
+    container_name: koboldcpp
+    build:
+      context: .
+    restart: always
+    volumes:
+      - '${MODEL_DIR}:/app/models'
+      - python-packages:/root/.local/share
+      - hf-cache:/root/.cache
+    ports:
+      - '7861:7861'
+    image: 'noneabove1182/koboldcpp-gpu:latest'
+    ulimits:
+      memlock: -1
+    mem_limit: 30gb
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [compute, utility]
+    command:
+      [
+        "--model",
+        "/app/models/${MODEL}",
+        "--port",
+        "7861",
+        "--host",
+        "0.0.0.0",
+        "--threads",
+        "8",
+        "--blasthreads",
+        "8",
+        "--blasbatchsize",
+        "-1",
+        "--useclblast",
+        "0",
+        "0",
+        "--gpulayers",
+        "43",
+        # "--forceversion",
+        # "500"
+      ]
+
+volumes:
+  python-packages:
+    name: python-packages
+  hf-cache:
+    name: hf-cache
