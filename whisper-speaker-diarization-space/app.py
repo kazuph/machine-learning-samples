@@ -14,18 +14,7 @@ from whisper import speech_to_text
 
 
 def load_audio(file_path):
-    return file_path, plot_waveform((file_path, "rb"))
-
-
-def plot_spectrogram(file):
-    y, sr = librosa.load(file.name, sr=None)
-    D = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
-    plt.figure(figsize=(10, 4))
-    librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='log')
-    plt.colorbar(format='%+2.0f dB')
-    plt.title('Spectrogram')
-    plt.tight_layout()
-    return plt.gcf()
+    return file_path, plot_spectrogram((file_path, "rb"))
 
 
 def plot_waveform(input_path):
@@ -45,6 +34,25 @@ def plot_waveform(input_path):
     return plt.gcf()
 
 
+def plot_spectrogram(input_path):
+    plt.figure()  # This will create a new figure and clear any existing figure
+    # fileがmp3だった場合はffmpegでwavに変換する
+    if input_path.split(".")[-1] == "mp3":
+        output_path = input_path.rsplit(".", 1)[0] + ".wav"
+        os.system(
+            f'ffmpeg -y -i "{input_path}" -ar 16000 -ac 1 -c:a pcm_s16le "{output_path}"')
+        input_path = output_path
+
+    y, sr = librosa.load(input_path, sr=None)
+    D = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
+    plt.figure(figsize=(14, 5))
+    librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='hz')
+    plt.colorbar(format='%+2.0f dB')
+    plt.title('Spectrogram')
+    plt.show()
+    return plt.gcf()
+
+
 def plot_embedding(embeddings, labels):
     plt.figure()  # This will create a new figure and clear any existing figure
     scatter = plt.scatter(embeddings[:, 0], embeddings[:, 1], c=labels)
@@ -58,17 +66,17 @@ def plot_embedding(embeddings, labels):
 
 def wrap_get_youtube(youtube_url):
     output_file_path, output_file_path, file_name = get_youtube(youtube_url)
-    return output_file_path, output_file_path, file_name, plot_waveform(output_file_path)
+    return output_file_path, output_file_path, file_name, plot_spectrogram(output_file_path)
 
 
 def wrap_divide_audio(file_path, file_name):
     output_file_path = divide_audio(file_path, file_name)
-    return output_file_path, plot_waveform(output_file_path)
+    return output_file_path, plot_spectrogram(output_file_path)
 
 
 def wrap_trim_silence(file_path, file_name):
     output_file_path = trim_silence(file_path, file_name)
-    return output_file_path, plot_waveform(output_file_path)
+    return output_file_path, plot_spectrogram(output_file_path)
 
 
 def wrap_speech_to_text(file_path, file_name, selected_source_lang, selected_whisper_model, number_speakers):
@@ -142,11 +150,6 @@ with demo:
         #                                      "https://www.youtube.com/watch?v=-UX0X45sYe4",
         #                                      "https://www.youtube.com/watch?v=7minSgqi-Gw"],
         #                            label="Examples", inputs=[youtube_url_in])
-
-        # プルダウンで/app/downloads/以下にあるmp3ファイルを選択する
-        with gr.Column():
-            gr.PullDown(label="Select mp3 file", choices=[
-                        "sample.mp3"], type="value", value="sample.mp3", interactive=True)
 
         with gr.Column():
             youtube_url_in.render()
