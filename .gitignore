@@ -6,3 +6,5 @@
 *_ct2/
 *-ct2/
 *.pyc
+*.bin
+.ipynb*
