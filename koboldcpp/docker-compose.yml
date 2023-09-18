@@ -4,7 +4,7 @@ services:
     container_name: koboldcpp
     build:
       context: .
-    restart: always
+    restart: no
     volumes:
       - '${MODEL_DIR}:/app/models'
       - python-packages:/root/.local/share
