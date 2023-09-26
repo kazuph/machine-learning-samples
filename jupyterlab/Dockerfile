@@ -29,7 +29,5 @@ RUN pip3 install --upgrade pip \
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
-# RUN ct2-transformers-converter --model matsuo-lab/weblab-10b-instruction-sft --quantization int8 --output_dir weblab-10b-instruction-sft-ct2 --trust_remote_code
-
 # COPY . .
 CMD ["python3", "main.py"]
