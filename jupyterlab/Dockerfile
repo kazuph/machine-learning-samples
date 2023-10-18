@@ -26,6 +26,8 @@ RUN pip3 install --upgrade pip \
     ipywidgets \
     import-ipynb
 
+RUN pip3 install notebook
+
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
