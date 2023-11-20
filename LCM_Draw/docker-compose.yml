@@ -1,0 +1,39 @@
+version: '3.9'
+services:
+  app:
+    tty: true
+    build:
+      context: .
+      dockerfile: "Dockerfile"
+    ports:
+      - "8889:7860"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+    volumes:
+      - .:/app
+      - python-packages:/root/.local/share
+      - hf-cache:/root/.cache
+    # command:
+      # tail -f /dev/null
+    # entrypoint: >
+    #   jupyter-lab
+    #   --allow-root
+    #   --ip=0.0.0.0
+    #   --port=8888
+    #   --no-browser
+    #   --NotebookApp.token=''
+    #   --notebook-dir=/app
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+              - driver: nvidia
+                device_ids: ['0']
+                capabilities: [compute, utility]
+
+volumes:
+  python-packages:
+    name: python-packages
+  hf-cache:
+    name: hf-cache
