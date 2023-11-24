@@ -7,6 +7,7 @@ services:
       dockerfile: "Dockerfile"
     ports:
       - "9999:9999"
+      - "7861:7860"
     environment:
       - NVIDIA_VISIBLE_DEVICES=0
       - OPENAI_API_KEY=${OPENAI_API_KEY}
