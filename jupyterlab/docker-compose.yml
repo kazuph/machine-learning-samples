@@ -38,5 +38,7 @@ services:
 volumes:
   python-packages:
     name: python-packages
+    external: true
   hf-cache:
     name: hf-cache
+    external: true
